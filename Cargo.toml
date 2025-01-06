@@ -1,0 +1,20 @@
+[package]
+name = "win_tcache_multi"
+version = "0.1.0"
+edition = "2021"
+
+[[bench]]
+name = "xta_multi"
+harness = false
+
+[dependencies]
+clap = { version = "4.5.23", features = ["derive"] }
+dunce = "1.0.5"
+rayon = "1.10.0"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[build-dependencies]
+cc = "1.0"
+bindgen = "0.71.1"
