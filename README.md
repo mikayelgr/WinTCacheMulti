@@ -1,5 +1,7 @@
 # win_tcache_multi
 
+For now, the README will be used exclusively for taking notes and useful references.
+
 - Image dataset for benchmarking can be found at <https://www.kaggle.com/datasets/pankajkumar2002/random-image-sample-dataset>
 
 > I learned I am trying to build a **macro-benchmark**, trying to measure realistic workloads or real-life situations, whereas a **micro-benchmark** aims to test an individual piece like a critical operation.
