@@ -3,7 +3,9 @@
 #include <Windows.h>
 #include <combaseapi.h>
 #include <cstdlib>
+#include <objbase.h>
 #include <processthreadsapi.h>
+#include <roapi.h>
 #include <shobjidl_core.h>
 #include <stdio.h>
 #include <thumbcache.h>
@@ -11,76 +13,37 @@
 #include <winerror.h>
 #include <winnt.h>
 
-/**
- * internal__GetShellItemFromPath
- *
- * This function retrieves an IShellItem interface pointer for a given file or
- * folder path. It serves as a helper function to convert a file system path
- * into a Shell Item object that can be used with various Windows Shell APIs.
- *
- * Parameters:
- * - PCWSTR path: The file or folder path as a wide-character string
- * (null-terminated). This parameter is required and must not be NULL.
- * - IShellItem **ppShellItem: A double pointer that will receive the IShellItem
- * interface. This parameter is required and must not be NULL.
- *
- * Returns:
- * - HRESULT: Returns S_OK on success. If either parameter is NULL, it returns
- * E_INVALIDARG. Other failure codes might be returned by
- * SHCreateItemFromParsingName.
- *
- * Notes:
- * - The caller is responsible for releasing the IShellItem interface obtained
- * through this function.
- */
-static HRESULT
-internal__GetShellItemFromPath(PCWSTR path, IShellItem** ppShellItem)
-{
-  // Checking to see whether any of the provided arguments are null just in
-  // case we miss them in our internal function calls.
-  if (!path || !ppShellItem) {
-    return E_INVALIDARG;
-  }
-
-  // Call SHCreateItemFromParsingName to get the IShellItem. For more info on
-  // SHCreateItemFromParsingName, check
-  // https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-shcreateitemfromparsingname
-  return SHCreateItemFromParsingName(
-    path,                     // File or folder path
-    NULL,                     // No bind context
-    IID_PPV_ARGS(ppShellItem) // Request IShellItem interface
-  );
-}
-
-// A helper function for computing the size of the thumbnail based on the size
-// of the current file.
-static inline int
-internal__compute_optimal_thumb_size(IShellItem* entry)
-{
-  // TODO: Complete the implementation. Note, there might be a WST flag which
-  // accomplishes this function and is a Windows built-in.
-  return 128;
-}
-
-// A wrapper function around CoInitializeEx, for initializing the Windows
-// Component Object Model (COM) in multi-thread apartment (MTA) mode.
-HRESULT
-wrapped__CoInitializeExMulti()
-{
-  return CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-}
-
 // A helper function for extracting the thumbnail of a resource given its
 // absolute path on disk. If successful, the function returns an HRESULT
 // containing 0.
-HRESULT
-wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags)
+GetThumbnailFromPathResult
+wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
 {
-  IShellItem* entry = NULL;
-  // Getting the shell item from the provided path
-  HRESULT code = internal__GetShellItemFromPath(path, &entry);
+  // The code pointer is specifically designed for getting the actual error
+  // code from Windows and making the function easily debuggable.
+  if (!codeptr) {
+    return GetThumbnailFromPathResult::e_missing_codeptr;
+  }
+
+  // Initializing the Component Object Model (COM)
+  HRESULT code = CoInitializeEx(NULL, COINIT_MULTITHREADED);
   if (!SUCCEEDED(code)) {
-    return code;
+    *codeptr = code;
+    return GetThumbnailFromPathResult::e_CoInitialize_FAILED;
+  }
+
+  IShellItem* entry = NULL;
+  // Call SHCreateItemFromParsingName to get the IShellItem. For more info on
+  // SHCreateItemFromParsingName, check
+  // https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-shcreateitemfromparsingname
+  code = SHCreateItemFromParsingName(
+    path,                // File or folder path
+    NULL,                // No bind context
+    IID_PPV_ARGS(&entry) // Request IShellItem interface
+  );
+  if (!SUCCEEDED(code)) {
+    *codeptr = code;
+    return GetThumbnailFromPathResult::e_SHCreateItemFromParsingName_FAILED;
   }
 
   // Code taken and adapted from the following StackOverflow thread
@@ -89,20 +52,30 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags)
   code = CoCreateInstance(
     CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&cache));
   if (!SUCCEEDED(code)) {
-    return code;
-  }
+    *codeptr = code;
 
-  // For more information on Windows scheduling and priority classes, visit the
-  // documentation at
-  // https://learn.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
-  // TODO: Experiment with this setting (maybe use this setting when running the
-  // program)
-  // SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+    // Handled as described in Microsoft docs
+    // https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-cocreateinstance
+    if (code == REGDB_E_CLASSNOTREG) {
+      return GetThumbnailFromPathResult::e_CoCreateInstance_REGDB_E_CLASSNOTREG;
+    }
+
+    if (code == CLASS_E_NOAGGREGATION) {
+      return GetThumbnailFromPathResult::
+        e_CoCreateInsance_CLASS_E_NOAGGREGATION;
+    }
+
+    if (code == E_NOINTERFACE) {
+      return GetThumbnailFromPathResult::e_CoCreateInstance_E_NOINTERFACE;
+    }
+
+    return GetThumbnailFromPathResult::e_CoCreateInstance_E_POINTER;
+  }
 
   // Instructing Windows to extract the thumbnail of the provided entry in the
   // filesystem and making writing it to the local thumbnail cache.
   // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/nf-thumbcache-ithumbnailprovider-getthumbnail
-  int thumb_size = internal__compute_optimal_thumb_size(entry);
+  int thumb_size = 128; // For now, defaulting to 128x128
   code = cache->GetThumbnail(
     entry,
     thumb_size,
@@ -112,10 +85,31 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags)
     nullptr,
     nullptr);
   if (!SUCCEEDED(code)) {
-    return code;
+    *codeptr = code;
+
+    if (code == E_INVALIDARG) {
+      return GetThumbnailFromPathResult::e_GetThumbnail_E_INVALIDARG;
+    }
+
+    if (code == WTS_E_FAILEDEXTRACTION) {
+      return GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_FAILEDEXTRACTION;
+    }
+
+    if (code == WTS_E_EXTRACTIONTIMEDOUT) {
+      return GetThumbnailFromPathResult::
+        e_GetThumbnail_WTS_E_EXTRACTIONTIMEDOUT;
+    }
+
+    if (code == WTS_E_SURROGATEUNAVAILABLE) {
+      return GetThumbnailFromPathResult::
+        e_GetThumbnail_WTS_E_SURROGATEUNAVAILABLE;
+    }
+
+    return GetThumbnailFromPathResult::
+      e_GetThumbnail_WTS_E_FASTEXTRACTIONNOTSUPPORTED;
   }
 
   entry->Release();
   // In case of successful extraction, 0 is returned.
-  return 0;
+  return GetThumbnailFromPathResult::ok;
 }

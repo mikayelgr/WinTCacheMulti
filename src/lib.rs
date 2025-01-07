@@ -1,28 +1,8 @@
 /// This module contains the raw bindings for all the FFI functions that
 /// we are going to need.
 mod sys {
-    // For more information, check out the official documentation from
-    // Microsoft at https://learn.microsoft.com/en-us/windows/win32/com/the-com-library
-
-    use crate::bindings;
-    unsafe extern "system" {
-        /// Binding to the Component Object Model (COM) initializer.
-        pub unsafe fn CoInitialize(_: *mut core::ffi::c_void) -> core::ffi::c_long;
-        /// Uninitializes the Component Object Model (COM).
-        pub unsafe fn CoUninitialize();
-    }
-
-    // Wrapper function definitions come from the wrapper.cpp file in the `external`
-    // directory.
-    unsafe extern "C" {
-        pub unsafe fn wrapped__GetThumbnailFromPath(
-            path: *const u16,
-            flags: bindings::extra::WTS_FLAGS,
-        ) -> ::std::os::raw::c_int;
-        /// A wrapper function the Component Object Model (COM)
-        /// https://learn.microsoft.com/en-us/windows/win32/api/_com/
-        pub unsafe fn wrapped__CoInitializeExMulti() -> core::ffi::c_long;
-    }
+    use crate::bindings::extra;
+    pub use extra::wrapped__GetThumbnailFromPath;
 }
 
 /// This module contains internal function definitions which are useful for working
@@ -32,11 +12,11 @@ mod internal {
 
     #[inline(always)]
     pub fn path_to_wstr(pb: PathBuf) -> Vec<u16> {
-        return std::ffi::OsStr::new(&pb)
+        std::ffi::OsStr::new(&pb)
             .encode_wide()
             // Appending a null terminator manually
             .chain(Some(0))
-            .collect();
+            .collect()
     }
 }
 
@@ -53,22 +33,67 @@ pub mod bindings {
         #![allow(non_camel_case_types)]
         #![allow(non_snake_case)]
 
+        use std::fmt::Display;
+
         include!(concat!(env!("OUT_DIR"), "/extra_bindings.rs"));
+
+        impl Display for GetThumbnailFromPathResult {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(match self {
+                    GetThumbnailFromPathResult::ok => "OK",
+                    GetThumbnailFromPathResult::e_missing_codeptr => "E_MISSING_CODEPTR",
+                    GetThumbnailFromPathResult::e_CoCreateInstance_REGDB_E_CLASSNOTREG => {
+                        "e_CoCreateInstance_REGDB_E_CLASSNOTREG"
+                    }
+                    GetThumbnailFromPathResult::e_CoCreateInsance_CLASS_E_NOAGGREGATION => {
+                        "e_CoCreateInsance_CLASS_E_NOAGGREGATION"
+                    }
+                    GetThumbnailFromPathResult::e_CoCreateInstance_E_NOINTERFACE => {
+                        "e_CoCreateInstance_E_NOINTERFACE"
+                    }
+                    GetThumbnailFromPathResult::e_CoCreateInstance_E_POINTER => {
+                        "e_CoCreateInstance_E_POINTER"
+                    }
+                    GetThumbnailFromPathResult::e_GetThumbnail_E_INVALIDARG => {
+                        "e_GetThumbnail_E_INVALIDARG"
+                    }
+                    GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_FAILEDEXTRACTION => {
+                        "e_GetThumbnail_WTS_E_FAILEDEXTRACTION"
+                    }
+                    GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_EXTRACTIONTIMEDOUT => {
+                        "e_GetThumbnail_WTS_E_EXTRACTIONTIMEDOUT"
+                    }
+                    GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_SURROGATEUNAVAILABLE => {
+                        "e_GetThumbnail_WTS_E_SURROGATEUNAVAILABLE"
+                    }
+                    GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_FASTEXTRACTIONNOTSUPPORTED => {
+                        "e_GetThumbnail_WTS_E_FASTEXTRACTIONNOTSUPPORTED"
+                    }
+                    GetThumbnailFromPathResult::e_CoInitialize_FAILED => "e_CoInitialize_FAILED",
+                    GetThumbnailFromPathResult::e_SHCreateItemFromParsingName_FAILED => {
+                        "e_SHCreateItemFromParsingName_FAILED"
+                    }
+                })
+            }
+        }
     }
 
     #[inline]
     fn get_thumbnail_from_path_raw(path: PathBuf, flags: extra::WTS_FLAGS) -> io::Result<()> {
         // Convert the Rust String to a wide string (UTF-16) and null-terminate it
         let wstr: Vec<u16> = internal::path_to_wstr(path);
-        let code = unsafe { sys::wrapped__GetThumbnailFromPath(wstr.as_ptr(), flags) };
-        if code == 0 {
-            return Ok(());
+        let mut code: std::ffi::c_int = 0 as std::ffi::c_int;
+        let code_ptr: *mut i32 = &mut code;
+        match unsafe { sys::wrapped__GetThumbnailFromPath(wstr.as_ptr(), flags, code_ptr) } {
+            extra::GetThumbnailFromPathResult::ok => Ok(()),
+            error => Err(io::Error::new(
+                ErrorKind::Other,
+                format!(
+                    "Failed to get thumbnail from path. Error: {}, Code: {}",
+                    error, code
+                ),
+            )),
         }
-
-        Err(io::Error::new(
-            ErrorKind::Other,
-            format!("`wrapped__GetThumbnailFromPath` failed: code={}", code),
-        ))
     }
 
     /// Safe binding to the wrapper function wrapped__GetThumbnailFromPath. Given a system
@@ -83,39 +108,5 @@ pub mod bindings {
     /// for manual removal of the thumbcache data from the respective folders.
     pub fn __bench_force_get_thumbnail_from_path(path: PathBuf) -> io::Result<()> {
         get_thumbnail_from_path_raw(path, extra::WTS_FLAGS::WTS_EXTRACTDONOTCACHE)
-    }
-
-    /// Safely initializes the COM library in multithreaded mode and identifies the concurrency model
-    /// as single-thread apartment (STA).
-    pub fn coinitialize_sta() -> io::Result<()> {
-        let code = unsafe { sys::CoInitialize(0 as *mut core::ffi::c_void) };
-        if code == 0 {
-            return Ok(());
-        }
-
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Failed to initialize COM in STA mode",
-        ))
-    }
-
-    /// Safely initializes the COM library in multithreaded mode and identifies the concurrency model
-    /// as multi-thread apartment (MTA).
-    pub fn coinitialize_mta() -> io::Result<()> {
-        let output = unsafe { sys::wrapped__CoInitializeExMulti() };
-        if output == 0 {
-            return Ok(());
-        }
-
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Failed to initialize COM in MTA mode",
-        ))
-    }
-
-    /// In the end, the progam must call this function to uninitialize the
-    /// Component Object Model (COM) library.
-    pub fn couninitialize() {
-        unsafe { sys::CoUninitialize() }
     }
 }

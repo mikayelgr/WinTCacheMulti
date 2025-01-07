@@ -4,7 +4,6 @@ fn main() {
 
     println!("cargo:rerun-if-changed=external/wrapper.cpp");
     println!("cargo:rerun-if-changed=external/wrapper.h");
-    println!("cargo:rerun-if-changed=external/build.rs");
 
     // Compiling the C++ wrapper library that we have created for interfacing with
     // the Windows APIs.
@@ -17,7 +16,11 @@ fn main() {
         .header("external/wrapper.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .allowlist_type("WTS_FLAGS")
+        .allowlist_type("HRESULT")
+        .allowlist_type("WindowsFoundationInitializeResult")
+        .allowlist_type("GetThumbnailFromPathResult")
         .allowlist_type("HIGH_PRIORITY_CLASS")
+        .allowlist_function("wrapped__GetThumbnailFromPath")
         .allowlist_function("SetPriorityClass")
         .allowlist_function("GetCurrentProcess")
         .default_enum_style(bindgen::EnumVariation::Rust {
@@ -31,7 +34,7 @@ fn main() {
         .write_to_file(out_path.join("extra_bindings.rs"))
         .expect("Couldn't write bindings!");
 
-    println!("cargo:rustc-link-lib=wrapper")
+    println!("cargo:rustc-link-lib=wrapper");
 }
 
 #[cfg(not(target_os = "windows"))]

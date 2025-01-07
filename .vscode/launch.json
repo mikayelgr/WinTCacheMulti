@@ -1,0 +1,125 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'win_tcache_multi'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=win_tcache_multi"
+                ],
+                "filter": {
+                    "name": "win_tcache_multi",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'win_tcache_multi'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=win_tcache_multi",
+                    "--package=win_tcache_multi"
+                ],
+                "filter": {
+                    "name": "win_tcache_multi",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "--st",
+                "--dir",
+                ".\\benches\\imgdata"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'win_tcache_multi'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=win_tcache_multi",
+                    "--package=win_tcache_multi"
+                ],
+                "filter": {
+                    "name": "win_tcache_multi",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        // {
+        //     "type": "lldb",
+        //     "request": "launch",
+        //     "name": "Debug benchmark 'benchutil'",
+        //     "cargo": {
+        //         "args": [
+        //             "test",
+        //             "--no-run",
+        //             "--bench=benchutil",
+        //             "--package=win_tcache_multi"
+        //         ],
+        //         "filter": {
+        //             "name": "benchutil",
+        //             "kind": "bench"
+        //         }
+        //     },
+        //     "args": [],
+        //     "cwd": "${workspaceFolder}"
+        // },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'mt'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=mt",
+                    "--package=win_tcache_multi"
+                ],
+                "filter": {
+                    "name": "mt",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'st'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=st",
+                    "--package=win_tcache_multi"
+                ],
+                "filter": {
+                    "name": "st",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
