@@ -86,40 +86,21 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug benchmark 'mt'",
+            "name": "Debug benchmark 'xthread'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bench=mt",
+                    "--bench=xthread",
                     "--package=win_tcache_multi"
                 ],
                 "filter": {
-                    "name": "mt",
+                    "name": "xthread",
                     "kind": "bench"
                 }
             },
             "args": [],
             "cwd": "${workspaceFolder}"
         },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug benchmark 'st'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bench=st",
-                    "--package=win_tcache_multi"
-                ],
-                "filter": {
-                    "name": "st",
-                    "kind": "bench"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
     ]
 }

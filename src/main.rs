@@ -1,4 +1,5 @@
 use std::fs::DirEntry;
+use std::ptr::null_mut;
 use std::sync::atomic::AtomicUsize;
 use std::time::Instant;
 use std::{io, path::PathBuf};
@@ -6,7 +7,7 @@ use std::{io, path::PathBuf};
 use clap::Parser;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
-use win_tcache_multi::bindings;
+use win_tcache_multi::bindings::{self, extra};
 
 #[derive(clap::Parser)]
 struct Args {
@@ -38,6 +39,8 @@ fn main() -> io::Result<()> {
     let start = Instant::now();
 
     if !args.st {
+        // TODO: Initialize the COM in MTA mode
+        unsafe { assert_eq!(extra::CoInitializeEx(null_mut(), 0x0), 0) };
         entries.par_iter().for_each(|entry| {
             if entry.file_type().unwrap().is_file() {
                 let fetch = bindings::get_thumbnail_from_path(entry.path());
@@ -47,6 +50,7 @@ fn main() -> io::Result<()> {
             }
         });
     } else {
+        unsafe { assert_eq!(extra::CoInitialize(null_mut()), 0x0) };
         for entry in entries {
             if entry.file_type().unwrap().is_file() {
                 let fetch = bindings::get_thumbnail_from_path(entry.path());
@@ -57,6 +61,7 @@ fn main() -> io::Result<()> {
         }
     }
 
+    unsafe { extra::CoUninitialize() };
     println!(
         "Successfully indexed {} items in {}ms",
         indexed.load(std::sync::atomic::Ordering::Acquire),

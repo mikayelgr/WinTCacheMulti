@@ -1,15 +1,8 @@
 #include "wrapper.h"
-
-#include <Windows.h>
 #include <combaseapi.h>
-#include <cstdlib>
 #include <objbase.h>
-#include <processthreadsapi.h>
-#include <roapi.h>
 #include <shobjidl_core.h>
-#include <stdio.h>
 #include <thumbcache.h>
-#include <winbase.h>
 #include <winerror.h>
 #include <winnt.h>
 
@@ -19,29 +12,29 @@
 GetThumbnailFromPathResult
 wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
 {
+  // if (!SUCCEEDED(CoInitialize(nullptr))) {
+  //   CoUninitialize();
+  //   return GetThumbnailFromPathResult::e_CoInitialize_FAILED;
+  // }
+
   // The code pointer is specifically designed for getting the actual error
   // code from Windows and making the function easily debuggable.
   if (!codeptr) {
+    // CoUninitialize();
     return GetThumbnailFromPathResult::e_missing_codeptr;
-  }
-
-  // Initializing the Component Object Model (COM)
-  HRESULT code = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-  if (!SUCCEEDED(code)) {
-    *codeptr = code;
-    return GetThumbnailFromPathResult::e_CoInitialize_FAILED;
   }
 
   IShellItem* entry = NULL;
   // Call SHCreateItemFromParsingName to get the IShellItem. For more info on
   // SHCreateItemFromParsingName, check
   // https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-shcreateitemfromparsingname
-  code = SHCreateItemFromParsingName(
+  HRESULT code = SHCreateItemFromParsingName(
     path,                // File or folder path
     NULL,                // No bind context
     IID_PPV_ARGS(&entry) // Request IShellItem interface
   );
   if (!SUCCEEDED(code)) {
+    // CoUninitialize();
     *codeptr = code;
     return GetThumbnailFromPathResult::e_SHCreateItemFromParsingName_FAILED;
   }
@@ -52,6 +45,7 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
   code = CoCreateInstance(
     CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&cache));
   if (!SUCCEEDED(code)) {
+    // CoUninitialize();
     *codeptr = code;
 
     // Handled as described in Microsoft docs
@@ -85,6 +79,7 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
     nullptr,
     nullptr);
   if (!SUCCEEDED(code)) {
+    // CoUninitialize();
     *codeptr = code;
 
     if (code == E_INVALIDARG) {
@@ -110,6 +105,7 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
   }
 
   entry->Release();
+  cache->Release();
   // In case of successful extraction, 0 is returned.
   return GetThumbnailFromPathResult::ok;
 }

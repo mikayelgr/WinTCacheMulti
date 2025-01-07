@@ -1,11 +1,5 @@
-#include <ShObjIdl.h>          // For IShellItem
-#include <Shlwapi.h>           // For SHCreateItemFromParsingName
-#include <Windows.h>           // For general windows typedefs and functions
-#include <processthreadsapi.h> // For SetPriorityClass
-#include <roapi.h>             // For Windows::Foundation::Initialize
-#include <thumbcache.h>        // For interfacing with the thumbnail cache
-#include <winbase.h>
-#include <winerror.h>
+#include <thumbcache.h>
+#include <winnt.h>
 
 #ifndef WRAPPER_H
 #define WRAPPER_H
@@ -14,6 +8,7 @@
 extern "C"
 {
 #endif
+
   typedef enum
   {
     ok,
@@ -43,7 +38,7 @@ extern "C"
   // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/ne-thumbcache-wts_flags#:~:text=format%2C%20typically%2096x96.-,WTS_FORCEEXTRACTION,-Value%3A%200x4
   GetThumbnailFromPathResult wrapped__GetThumbnailFromPath(PCWSTR path,
                                                            WTS_FLAGS flags,
-                                                           int*);
+                                                           int* codeptr);
 
 #ifdef __cplusplus
 }

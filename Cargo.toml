@@ -3,6 +3,10 @@ name = "win_tcache_multi"
 version = "0.1.0"
 edition = "2021"
 
+[[bench]]
+name = "xthread"
+harness = false
+
 [profile.release]
 lto = "fat"
 opt-level = 3
@@ -10,14 +14,6 @@ debug-assertions = false
 debug = 0
 codegen-units = 1
 overflow-checks = false
-
-[[bench]]
-name = "mt" # multithreaded benchmark
-harness = false
-
-[[bench]]
-name = "st" # single-threaded benchmark
-harness = false 
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
