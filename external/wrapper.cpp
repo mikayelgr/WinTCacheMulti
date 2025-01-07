@@ -12,15 +12,9 @@
 GetThumbnailFromPathResult
 wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
 {
-  // if (!SUCCEEDED(CoInitialize(nullptr))) {
-  //   CoUninitialize();
-  //   return GetThumbnailFromPathResult::e_CoInitialize_FAILED;
-  // }
-
   // The code pointer is specifically designed for getting the actual error
   // code from Windows and making the function easily debuggable.
   if (!codeptr) {
-    // CoUninitialize();
     return GetThumbnailFromPathResult::e_missing_codeptr;
   }
 
@@ -34,7 +28,6 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
     IID_PPV_ARGS(&entry) // Request IShellItem interface
   );
   if (!SUCCEEDED(code)) {
-    // CoUninitialize();
     *codeptr = code;
     return GetThumbnailFromPathResult::e_SHCreateItemFromParsingName_FAILED;
   }
@@ -45,7 +38,6 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
   code = CoCreateInstance(
     CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&cache));
   if (!SUCCEEDED(code)) {
-    // CoUninitialize();
     *codeptr = code;
 
     // Handled as described in Microsoft docs
@@ -69,17 +61,15 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
   // Instructing Windows to extract the thumbnail of the provided entry in the
   // filesystem and making writing it to the local thumbnail cache.
   // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/nf-thumbcache-ithumbnailprovider-getthumbnail
-  int thumb_size = 128; // For now, defaulting to 128x128
   code = cache->GetThumbnail(
     entry,
-    thumb_size,
+    128,
     // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/ne-thumbcache-wts_flags
     flags,
     nullptr, // Optionally, provide a bitmap for storing the thumbnail
     nullptr,
     nullptr);
   if (!SUCCEEDED(code)) {
-    // CoUninitialize();
     *codeptr = code;
 
     if (code == E_INVALIDARG) {

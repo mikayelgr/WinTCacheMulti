@@ -7,11 +7,11 @@ mod sys {
 
 /// This module contains internal function definitions which are useful for working
 /// with various types as well as interfacing with FFI.
-mod internal {
+pub(crate) mod internal {
     use std::{os::windows::ffi::OsStrExt, path::PathBuf};
 
     #[inline(always)]
-    pub fn path_to_wstr(pb: PathBuf) -> Vec<u16> {
+    pub(crate) fn path_to_wstr(pb: PathBuf) -> Vec<u16> {
         std::ffi::OsStr::new(&pb)
             .encode_wide()
             // Appending a null terminator manually

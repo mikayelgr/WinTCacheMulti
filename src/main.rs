@@ -19,6 +19,10 @@ struct Args {
 }
 
 fn main() -> io::Result<()> {
+    // Safe method for closing the component object model
+    ctrlc::set_handler(|| unsafe { extra::CoUninitialize() })
+        .expect("Couldn't register Ctrl-C handler");
+
     // https://learn.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
     // unsafe { bindings::extra::SetPriorityClass(bindings::extra::GetCurrentProcess(), 31) };
 
@@ -28,10 +32,25 @@ fn main() -> io::Result<()> {
     // a string prefixed with `\\?\`.
     let path = dunce::canonicalize(args.dir)?;
 
+    // Defining the maximum and minimum file sizes in this directory to
+    // then scale these values to the range [0,1024].
+    // let mut min_file_size: Option<u64> = None;
+    // let mut max_file_size: u64 = 0;
+
     // Unwrapping the entries in parallel
     let entries: Vec<DirEntry> = std::fs::read_dir(path)?
-        .par_bridge() // Converts the iterator into a parallel iterator
-        .map(|e| e.unwrap())
+        .par_bridge()
+        .map(|e| {
+            let e = e.unwrap();
+            // let s = e.metadata().unwrap().file_size();
+            // if s > max_file_size {
+            //     max_file_size = s;
+            // }
+            // if min_file_size.is_none() || s < min_file_size.unwrap() {
+            //     min_file_size = Some(s);
+            // }
+            e
+        })
         .collect();
 
     let indexed = AtomicUsize::new(0);
@@ -40,9 +59,9 @@ fn main() -> io::Result<()> {
 
     if !args.st {
         unsafe { assert_eq!(extra::CoInitializeEx(null_mut(), 0x0), 0) };
-        entries.par_iter().for_each(|entry| {
-            if entry.file_type().unwrap().is_file() {
-                let fetch = bindings::get_thumbnail_from_path(entry.path());
+        entries.par_iter().for_each(|e| {
+            if e.file_type().unwrap().is_file() {
+                let fetch = bindings::get_thumbnail_from_path(e.path());
                 if fetch.is_ok() {
                     indexed_ref.fetch_add(1, std::sync::atomic::Ordering::Release);
                 }
@@ -50,9 +69,9 @@ fn main() -> io::Result<()> {
         });
     } else {
         unsafe { assert_eq!(extra::CoInitialize(null_mut()), 0x0) };
-        for entry in entries {
-            if entry.file_type().unwrap().is_file() {
-                let fetch = bindings::get_thumbnail_from_path(entry.path());
+        for e in entries {
+            if e.file_type().unwrap().is_file() {
+                let fetch = bindings::get_thumbnail_from_path(e.path());
                 if fetch.is_ok() {
                     indexed_ref.fetch_add(1, std::sync::atomic::Ordering::Release);
                 }

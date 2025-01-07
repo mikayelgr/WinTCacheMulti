@@ -6,6 +6,7 @@ use win_tcache_multi::bindings::extra;
 
 mod benchutil;
 
+// Multi-threaded benchmark
 fn mt(c: &mut Criterion) {
     c.bench_function("multi-threaded", |b| {
         unsafe { extra::CoInitializeEx(core::ptr::null_mut(), 0x0) };
@@ -20,6 +21,7 @@ fn mt(c: &mut Criterion) {
     });
 }
 
+// Single-threaded benchmark
 fn st(c: &mut Criterion) {
     c.bench_function("single-threaded", |b| {
         unsafe { assert_eq!(extra::CoInitialize(null_mut()), 0x0) };
