@@ -39,7 +39,6 @@ fn main() -> io::Result<()> {
     let start = Instant::now();
 
     if !args.st {
-        // TODO: Initialize the COM in MTA mode
         unsafe { assert_eq!(extra::CoInitializeEx(null_mut(), 0x0), 0) };
         entries.par_iter().for_each(|entry| {
             if entry.file_type().unwrap().is_file() {
