@@ -1,4 +1,4 @@
-# WinTCacheMulti
+# WinTCacheMulti: An Attempt to Parallelize Thumbnail Extraction in Windows File Explorer
 
 Windows remains the world's most widely used desktop operating system, and Windows File Explorer is one of the most critical
 software tools. The Windows File Explorer enables users to browse and preview the files stored on their computers with a
