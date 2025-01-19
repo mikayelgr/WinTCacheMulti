@@ -1,23 +1,30 @@
-#include "wrapper.h"
+#include "wrapper.hpp"
 #include <combaseapi.h>
+#include <comdef.h>
 #include <objbase.h>
 #include <shobjidl_core.h>
+#include <string>
 #include <thumbcache.h>
 #include <winerror.h>
 #include <winnt.h>
 
+#define HANDLE_ERROR(code)                                                     \
+  if (FAILED(code)) {                                                          \
+    _com_error err(code);                                                      \
+    std::string error = "error: " + std::string(__FUNCTION__) + ":" +          \
+                        std::to_string(__LINE__) + " " + err.ErrorMessage();   \
+    return GetThumbnailResult{ false, code, error.c_str() };                   \
+  }
+
+#pragma comment(lib, "ole32")
+#pragma comment(lib, "user32")
+#pragma comment(lib, "shell32")
 // A helper function for extracting the thumbnail of a resource given its
 // absolute path on disk. If successful, the function returns an HRESULT
 // containing 0.
-GetThumbnailFromPathResult
-wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
+GetThumbnailResult
+GetThumbnail(PCWSTR path, WTS_FLAGS flags)
 {
-  // The code pointer is specifically designed for getting the actual error
-  // code from Windows and making the function easily debuggable.
-  if (!codeptr) {
-    return GetThumbnailFromPathResult::e_missing_codeptr;
-  }
-
   IShellItem* entry = NULL;
   // Call SHCreateItemFromParsingName to get the IShellItem. For more info on
   // SHCreateItemFromParsingName, check
@@ -27,75 +34,32 @@ wrapped__GetThumbnailFromPath(PCWSTR path, WTS_FLAGS flags, int* codeptr)
     NULL,                // No bind context
     IID_PPV_ARGS(&entry) // Request IShellItem interface
   );
-  if (!SUCCEEDED(code)) {
-    *codeptr = code;
-    return GetThumbnailFromPathResult::e_SHCreateItemFromParsingName_FAILED;
-  }
+  HANDLE_ERROR(code);
 
   // Code taken and adapted from the following StackOverflow thread
   // https://stackoverflow.com/q/20949827
   IThumbnailCache* cache = nullptr;
   code = CoCreateInstance(
     CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&cache));
-  if (!SUCCEEDED(code)) {
-    *codeptr = code;
-
-    // Handled as described in Microsoft docs
-    // https://learn.microsoft.com/en-us/windows/win32/api/combaseapi/nf-combaseapi-cocreateinstance
-    if (code == REGDB_E_CLASSNOTREG) {
-      return GetThumbnailFromPathResult::e_CoCreateInstance_REGDB_E_CLASSNOTREG;
-    }
-
-    if (code == CLASS_E_NOAGGREGATION) {
-      return GetThumbnailFromPathResult::
-        e_CoCreateInsance_CLASS_E_NOAGGREGATION;
-    }
-
-    if (code == E_NOINTERFACE) {
-      return GetThumbnailFromPathResult::e_CoCreateInstance_E_NOINTERFACE;
-    }
-
-    return GetThumbnailFromPathResult::e_CoCreateInstance_E_POINTER;
-  }
+  HANDLE_ERROR(code);
 
   // Instructing Windows to extract the thumbnail of the provided entry in the
   // filesystem and making writing it to the local thumbnail cache.
   // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/nf-thumbcache-ithumbnailprovider-getthumbnail
   code = cache->GetThumbnail(
     entry,
+    // Both WinThumbsPreloader and WinThumbsPreloader-V2 use 128x128 resolution
     128,
     // https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/ne-thumbcache-wts_flags
     flags,
     nullptr, // Optionally, provide a bitmap for storing the thumbnail
     nullptr,
     nullptr);
-  if (!SUCCEEDED(code)) {
-    *codeptr = code;
+  HANDLE_ERROR(code);
 
-    if (code == E_INVALIDARG) {
-      return GetThumbnailFromPathResult::e_GetThumbnail_E_INVALIDARG;
-    }
-
-    if (code == WTS_E_FAILEDEXTRACTION) {
-      return GetThumbnailFromPathResult::e_GetThumbnail_WTS_E_FAILEDEXTRACTION;
-    }
-
-    if (code == WTS_E_EXTRACTIONTIMEDOUT) {
-      return GetThumbnailFromPathResult::
-        e_GetThumbnail_WTS_E_EXTRACTIONTIMEDOUT;
-    }
-
-    if (code == WTS_E_SURROGATEUNAVAILABLE) {
-      return GetThumbnailFromPathResult::
-        e_GetThumbnail_WTS_E_SURROGATEUNAVAILABLE;
-    }
-
-    return GetThumbnailFromPathResult::
-      e_GetThumbnail_WTS_E_FASTEXTRACTIONNOTSUPPORTED;
-  }
-
+  // Resources need to be released after extracting the thumbnail
   entry->Release();
   cache->Release();
   // In case of successful extraction, 0 is returned.
-  return GetThumbnailFromPathResult::ok;
+  return GetThumbnailResult{ true, code, "" };
 }

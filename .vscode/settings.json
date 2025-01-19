@@ -1,4 +1,8 @@
 {
     "rust-analyzer.checkOnSave": true,
     "rust-analyzer.cargo.buildScripts.rebuildOnSave": true,
+    // Required for clangd to parse the .clangd file
+    "clangd.arguments": [
+        "--enable-config"
+    ]
 }

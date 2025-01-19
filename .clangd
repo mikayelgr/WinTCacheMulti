@@ -1,0 +1,4 @@
+CompileFlags:
+    #C++17
+    Add:
+        -std=c++14

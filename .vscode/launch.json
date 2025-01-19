@@ -26,7 +26,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'win_tcache_multi'",
+            "name": "(single) 'win_tcache_multi'",
             "cargo": {
                 "args": [
                     "build",
@@ -48,11 +48,10 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'win_tcache_multi'",
+            "name": "(multi) 'win_tcache_multi'",
             "cargo": {
                 "args": [
-                    "test",
-                    "--no-run",
+                    "build",
                     "--bin=win_tcache_multi",
                     "--package=win_tcache_multi"
                 ],
@@ -61,28 +60,12 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "--dir",
+                ".\\benches\\imgdata"
+            ],
             "cwd": "${workspaceFolder}"
         },
-        // {
-        //     "type": "lldb",
-        //     "request": "launch",
-        //     "name": "Debug benchmark 'benchutil'",
-        //     "cargo": {
-        //         "args": [
-        //             "test",
-        //             "--no-run",
-        //             "--bench=benchutil",
-        //             "--package=win_tcache_multi"
-        //         ],
-        //         "filter": {
-        //             "name": "benchutil",
-        //             "kind": "bench"
-        //         }
-        //     },
-        //     "args": [],
-        //     "cwd": "${workspaceFolder}"
-        // },
         {
             "type": "lldb",
             "request": "launch",
