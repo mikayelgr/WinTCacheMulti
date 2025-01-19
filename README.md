@@ -1,4 +1,4 @@
-# win_tcache_multi
+# WinTCacheMulti
 
 Windows remains the world's most widely used desktop operating system, and Windows File Explorer is one of the most critical
 software tools. The Windows File Explorer enables users to browse and preview the files stored on their computers with a
@@ -15,7 +15,7 @@ multi-core architecture of modern CPUs.
 > - [Does the Windows File Explorer use parallelization for thumbnail extraction?](https://answers.microsoft.com/en-us/windows/forum/all/does-the-windows-file-explorer-use-parallelization/a95ad971-04e4-4dd2-a53d-d712669f9973)
 > - [Windows explorer slow thumbnail creation/processing](https://www.reddit.com/r/Windows11/comments/15jmukz/windows_explorer_slow_thumbnail_creationprocessing/)
 
-`win_tcache_multi` was an experiment which aimed to implement a multithreaded approach for
+`WinTCacheMulti` was an experiment which aimed to implement a multithreaded approach for
 thumbnail extraction on Windows-based systems. The goal of this project was to optimize the
 performance of Windows File Explorer's thumbnail extraction mechanism, which [historically has
 relied on sequential processing](https://answers.microsoft.com/en-us/windows/forum/all/does-the-windows-file-explorer-use-parallelization/a95ad971-04e4-4dd2-a53d-d712669f9973).
@@ -81,7 +81,7 @@ Compile using LLVM clang. Note, that the example assumes that you are compiling 
 Windows-specific functions are available only on Windows. **Compiling on other systems like Linux will fail**.
 
 ```powershell
-clang++ -O3 -std=c++20 -fsave-optimization-record ./win_tcache_multi.cpp -o ./win_tcache_multi.exe
+clang++ -O3 -std=c++20 -fsave-optimization-record ./docs/reproduce_error.cpp -o ./win_tcache_multi.exe
 # Assuming that you have a folder titled `images` in the same folder as your C++ source
 .\win_tcache_multi.exe .\images
 ```
@@ -163,7 +163,7 @@ in the Windows task manager:
 
 While multithreading aimed to improve performance, threads consumed CPU cycles by busy-waiting. This behavior occurred due to file locks imposed by Windows, preventing concurrent access to the thumbnail cache. Busy-waiting is a process, where a  process waits and continuously keeps on checking for the condition to be satisfied before going ahead with its execution. In our case, the odds are high that some sort of a lock in the OS prevented the CPU from
 doing the work in parallel. To make sure that locking was actually occurring, I analyzed what happens when I run
-win_tcache_multi using [ProcMon from Windows Sysinternals](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon).
+WinTCacheMulti using [ProcMon from Windows Sysinternals](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon).
 Surely enough, immediatelly after running the program, a lot (at least 50) of file locks were queued in the process monitor,
 specifically on a file called `C:\ProgramData\Microsoft\Windows\AppRepository\StateRepository-Machine.srd-shm`. After a bit
 of research, I found that the file is a shared memory file associated with the StateRepository-Machine.srd SQLite database.
@@ -192,7 +192,7 @@ It is unclear to why Microsoft would force into using a single-threaded approach
 
 ## Building and Running From Source
 
-If you want to build and run win_tcache_multi from source, you can run the following
+If you want to build and run WinTCacheMulti from source, you can run the following
 command. The example assumes that you have the Rust toolchain installed:
 
 ```powershell
