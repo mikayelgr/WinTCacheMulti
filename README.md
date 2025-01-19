@@ -190,6 +190,18 @@ It is unclear to why Microsoft would force into using a single-threaded approach
 - Multithreaded performance was marginally better (~4.7%), but high CPU utilization indicated threads were waiting on file locks
 - Lock contention in the thumbnail database nullified parallel processing benefits
 
+## Building and Running From Source
+
+If you want to build and run win_tcache_multi from source, you can run the following
+command. The example assumes that you have the Rust toolchain installed:
+
+```powershell
+# For multi-threaded
+cargo run --release -- --dir ./images
+# For single-threaded
+cargo run --release -- --st --dir ./images
+```
+
 ## Conclusion
 
 While I initially aimed to develop an embarrassingly parallel approach to "fix" the Windows File Explorer's thumbnail extraction process, I managed to go down deeper the rabbit hole and find out that this is technically impossible to do, due to the way that Windows handles and uses SQLite internally.
@@ -207,3 +219,7 @@ Despite the lack of success in achieving full parallelization, this project prov
 ## Acknowledgements
 
 I would like to express my gratitude to [Ash Vardanian](https://www.linkedin.com/in/ashvardanian/), Founder of Unum Cloud, for his willingness to share his expertise in low-level software design. I occasionally reached out to him with questions about efficient design principles, and he was always available to provide thoughtful guidance. While his insights were valuable to my understanding, any mistakes or inaccuracies in this research are solely my own.
+
+## Citing
+
+TODO
