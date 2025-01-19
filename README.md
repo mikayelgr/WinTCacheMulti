@@ -222,4 +222,4 @@ I would like to express my gratitude to [Ash Vardanian](https://www.linkedin.com
 
 ## Citing
 
-TODO
+See [CITATION.cff](./CITATION.cff).

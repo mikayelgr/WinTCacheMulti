@@ -4,6 +4,6 @@ authors:
 - family-names: Grigoryan
   given-names: Mikayel
 orcid: https://orcid.org/0009-0006-0137-7645
-title: WinTCacheMulti: An Attempt to Parallelize Thumbnail Extraction in Windows File Explorer
+title: "WinTCacheMulti: An Attempt to Parallelize Thumbnail Extraction in Windows File Explorer"
 version: v1.0.0
 date-released: 2025-01-19
