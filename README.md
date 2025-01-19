@@ -219,6 +219,7 @@ Despite the lack of success in achieving full parallelization, this project prov
 ## Acknowledgements
 
 I would like to express my gratitude to [Ash Vardanian](https://www.linkedin.com/in/ashvardanian/), Founder of Unum Cloud, for his willingness to share his expertise in low-level software design. I occasionally reached out to him with questions about efficient design principles, and he was always available to provide thoughtful guidance. While his insights were valuable to my understanding, any mistakes or inaccuracies in this research are solely my own.
+Additionally, I would like to thank my program chair [Dr. Hayk Nersisyan](https://people.aua.am/team_member/hayk-nersisyan/) for encouraging me to not give up, since I didn't get the results I expected.
 
 ## Citing
 
