@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14697927.svg)](https://doi.org/10.5281/zenodo.14697927)
+
 # WinTCacheMulti: An Attempt to Parallelize Thumbnail Extraction in Windows File Explorer
 
 Windows remains the world's most widely used desktop operating system, and Windows File Explorer is one of the most critical
