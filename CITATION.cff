@@ -5,5 +5,8 @@ authors:
   given-names: Mikayel
 orcid: https://orcid.org/0009-0006-0137-7645
 title: "WinTCacheMulti: An Attempt to Parallelize Thumbnail Extraction in Windows File Explorer"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.14697927
 version: v1.0.0
 date-released: 2025-01-19
